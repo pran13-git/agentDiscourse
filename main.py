@@ -14,8 +14,19 @@ def create_agent_chat(personality_name: str):
     )
     model = genai.GenerativeModel("gemini-1.5-flash")
     chat = model.start_chat()
-    chat.send_message(prompt)
+
+    for attempt in range(3):
+        try:
+            chat.send_message(prompt)
+            break
+        except google.api_core.exceptions.DeadlineExceeded:
+            print(f"[Retry {attempt+1}] Timed out. Retrying...")
+            time.sleep(2)
+    else:
+        raise RuntimeError("Model failed after 3 retries due to timeout.")
+
     return chat
+
 
 def run_debate(topic, personality1, personality2, max_turns=5):
     agent1_chat = create_agent_chat(personality1)
